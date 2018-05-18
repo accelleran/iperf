@@ -477,6 +477,17 @@ iperf_run_client(struct iperf_test * test)
 	memcpy(&write_set, &test->write_set, sizeof(fd_set));
 	(void) gettimeofday(&now, NULL);
 	timeout = tmr_timeout(&now);
+
+	if (test->state == TEST_END && result == 0) {
+		static struct timeval tmpTimeVal = {};
+		if (timeout == NULL) {
+			timeout = &tmpTimeVal;
+		}
+		timeout->tv_sec = 5;
+		timeout->tv_usec = 0;
+
+	}
+
 	result = select(test->max_fd + 1, &read_set, &write_set, NULL, timeout);
 	if (result < 0 && errno != EINTR) {
   	    i_errno = IESELECT;
@@ -489,6 +500,12 @@ iperf_run_client(struct iperf_test * test)
 		}
 		FD_CLR(test->ctrl_sck, &read_set);
 	    }
+	} else { /* result == 0 */
+		if (test->state == TEST_END) {
+			(void) iperf_client_end(test);
+			i_errno = IECTRLCLOSE;
+			return -1;
+		}
 	}
 
 	if (test->state == TEST_RUNNING) {

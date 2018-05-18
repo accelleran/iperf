@@ -232,6 +232,10 @@ server_timer_proc(TimerClientData client_data, struct timeval *nowP)
     if (test->done)
         return;
     test->done = 1;
+
+    test->state = DISPLAY_RESULTS;
+    test->reporter_callback(test);
+
     /* Free streams */
     while (!SLIST_EMPTY(&test->streams)) {
         sp = SLIST_FIRST(&test->streams);
